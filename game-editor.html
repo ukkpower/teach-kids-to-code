@@ -1,0 +1,511 @@
+<html>
+<head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+    <script src="lib/quintus-all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.3/ace.js"></script>
+    <style>
+        canvas {
+          background-color:black;
+        }
+        #editor {
+          height: 500px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="col-md-6">
+            <div id="editor">moveForward();
+                moveForward();
+                turnRight();
+                moveForward();
+                moveForward();
+                moveForward();
+            </div>        
+        </div>
+        <div class="col-md-6">
+            <canvas id='myGame' width="496" height="496"></canvas>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        //Set up code editor
+        var editor = ace.edit("editor");
+        editor.setTheme("ace/theme/monokai");
+        editor.getSession().setMode("ace/mode/javascript");
+    </script>
+
+    <script>
+        var theDojo101 = function(options){
+
+            function getOptions (options) {
+                var opts = options || {};
+
+                opts.level = opts.level || 'level-1.tmx';
+                opts.level = '' + opts.level;
+
+                opts.code = opts.code || 'Editor';
+
+                opts.levelPoints = opts.levelPoints || 1;
+
+                opts.direction = opts.direction || "d";
+
+                return opts;
+            }
+
+            function init() {
+
+                options = getOptions(options);
+
+                buildGame();
+            }
+
+            function Sleep()
+            {
+                var z=4300;
+                for(var k=0;k<z;k++)
+                {
+                    for(var l=0;l<z;l++){}
+                }
+        }
+
+        function levelComplete (success) {
+            if(success) {
+                $('#successModal').modal()
+            } else {
+                $('#sorryModal').modal()
+            }
+        }
+
+        function buildGame(){
+            var Q = window.Q = Quintus()
+            .include("Scenes, Sprites, Anim,2D, Input, Touch, UI, TMX, Audio")
+            .setup("myGame",{
+                    width:   496, // Set the default width to 800 pixels
+                    height:  496, // Set the default height to 600 pixels
+                    upsampleWidth:  496,  // Double the pixel density of the
+                    upsampleHeight: 496,  // game if the w or h is 420x320
+                    downsampleWidth: 1024, // Halve the pixel density if resolution
+                    downsampleHeight: 768,  // is larger than or equal to 1024x768
+                    scaleToFit: true
+                })
+            .touch()
+            .enableSound();
+            Q.input.keyboardControls();
+            Q.input.joypadControls();
+            Q.gravityY = 0;
+            Q.gravityX = 0;
+
+            var code;//code from editor
+            var FuncArray;
+            var gameStart=false;//execute code after start button is pressed
+            var gameFinished=false;
+            var i=0;//index of array
+            var move_count=0; //total number of moves made
+            var collected_points=0;//It contains count of collected flowers
+            var gamePassed=false;
+            /*upon collision with flower move_collision vaiables will be used
+            for moving to next box, in correct dirction*/
+            var move_collision=options.direction;
+
+            var move_Player=options.direction;/*it will define the direction based on PlayerControls direction,
+            so motion continues after it has ended in PlayerControls*/
+
+            Q.component("PlayerControls", {
+                // default properties to add onto our entity
+                defaults: { speed: 8, direction: 'null' },
+
+                // called when the component is added to
+                // an entity
+                added: function() {
+                    var p = this.entity.p;
+
+                    // adding default properties
+                    Q._defaults(p,this.defaults);
+
+                    // every time our entity steps, call its step method
+                    this.entity.on("step",this,"step");
+                },
+
+                step: function(dt) {
+                    // entity's properties
+                    var p = this.entity.p;
+
+                    collected_points=Q.state.get("points");
+                    if(collected_points>=options.levelPoints && gameFinished==false)
+                    {
+                        gameFinished=true;
+                        gamePassed=true;
+                        //Q.state.set("points", options.levelPoints);
+                        Q.stageScene("GameOverMsg", 2);//display game over message
+                        //levelComplete(true);
+                    }
+
+                    // direction from the input will help in animation
+                    p.direction =   Q.inputs['left']  ? 'left' :
+                    Q.inputs['right'] ? 'right' :
+                    Q.inputs['up']    ? 'up' :
+                    Q.inputs['down']  ? 'down' : null;
+
+
+                    var player_animation = Q("Player").first();
+
+                    if(gameStart==true)
+                    {
+                        for(i;i<FuncArray.length;i++)
+                        {
+
+                            if(FuncArray[i]=="turnDown();")
+                            {
+                                move_collision = "down";
+                            }
+                            else if(FuncArray[i]=="turnLeft();")
+                            {
+                                move_collision = "left";
+                            }
+                            else if(FuncArray[i]=="turnRight();")
+                            {
+                                move_collision = "right";
+                            }
+                            else if(FuncArray[i]=="turnUp();")
+                            {
+                                move_collision = "up";
+                            }
+                            else if(FuncArray[i]=="moveForward();")
+                            {
+								move_count++;//counting total moves
+                                if(move_collision=="up")
+                                {
+                                    for(var x=0;x<16;x++)
+                                    {
+                                        Sleep();
+                                        setTimeout(function (){
+                                            p.y -= p.speed;
+                                            move_Player="u";
+                                            //player_animation.play("run_up");
+                                        },1000);
+                                    }
+                                }
+                                else if(move_collision=="right")
+                                {
+                                    for(var x=0;x<16;x++)
+                                    {
+                                        Sleep();
+                                        if (!(p.x >= 1280 )) {
+                                            setTimeout(function (){
+                                                p.x += p.speed;
+                                                //player_animation.play("run_right");
+                                                move_Player="r";
+                                            },1000);
+                                        }
+                                    }
+                                }
+                                else if(move_collision=="left")
+                                {
+                                    for(var x=0;x<16;x++)
+                                    {
+                                        Sleep();
+                                        setTimeout(function (){
+                                            p.x -= p.speed;
+                                            move_Player="l";
+                                           // player_animation.play("run_left");
+                                       },1000);
+                                    }
+                                }
+                                else//for down and default
+                                {
+                                    for(var x=0;x<16;x++)
+                                    {
+                                        Sleep();
+                                        //  if (!(p.y >= 512)) {
+                                            setTimeout(function (){
+                                                p.y += p.speed;
+                                                move_Player="d";
+                                            },1000);
+                                        //  }//if end
+                                    }
+                                }//else end
+                                i++;
+                                if(i==(FuncArray.length-1))//if commands execute this block
+                                {
+                                    setTimeout(function ()
+                                    {
+                                        //all movement has been completed, now lets check if all flowers collected or not
+                                        collected_points=Q.state.get("points");
+                                        if(collected_points<options.levelPoints && gameFinished==false)
+                                        {
+                                            gameFinished=true;
+                                            gamePassed=false;
+                                            Q.stageScene("GameOverMsg", 2);//display game over message
+                                        }//inner if end
+                                        //To continue the movement for the last command
+                                        if(FuncArray[(FuncArray.length-1)]=="turnRight();")
+                                        {
+                                            move_Player="r";
+                                            //  console.log("RIGHT");
+                                        }
+                                        else if(FuncArray[FuncArray.length-1]=="turnLeft();")
+                                        {
+                                            move_Player="l";
+                                            //    console.log("LEFT");
+                                        }
+                                        else if(FuncArray[FuncArray.length-1]=="turnUp();")
+                                        {
+                                            move_Player="u";
+                                            //    console.log("UP");
+                                        }
+                                        else if(FuncArray[FuncArray.length-1]=="turnDown();")
+                                        {
+                                            move_Player="d";
+                                            //    console.log("DOWN");
+                                        }
+                                    },1300);
+                                }
+                                /*Block below is added because sometime, computer misses the last command
+                                if we use only the above if statement */
+                                if(i==FuncArray.length)//stop game only after all commands executed
+                                {
+                                    gameStart=false;
+                                }
+                                /*Suppose length of array is 1 and we have only 1 funciton moveForward(), the 
+                                it will be missed by our if condition i.e if(i==(FuncArray.length-1)) so we have to
+                                explicitly make a new condition which can handle this scenario*/
+                                if(1==FuncArray.length && FuncArray[0]=="moveForward();")//stop game only after all commands executed
+                                {
+                                   setTimeout(function ()
+                                   {
+                                        //all movement has been completed, now lets check if all flowers collected or not
+                                        collected_points=Q.state.get("points");
+                                        if(collected_points<options.levelPoints && gameFinished==false)
+                                        {
+                                          console.log('faileed');
+                                          gameFinished=true;
+                                          gamePassed=false;
+                                            Q.stageScene("GameOverMsg", 2);//display game over message
+                                        }
+                                    },1300);
+                               }
+                               break;
+                            }//else if end
+                        }//for end
+                    }//if end here
+                }//step end
+            });
+            //player animation
+            Q.animations('snail', {
+              run_right: { frames: [12,13,14,15], rate: 1/6},
+              run_left: { frames: [8,9,10,11], rate: 1/6},
+              run_up: { frames: [16,17,18,19], rate: 1/6},
+              stand: {frames:[4,5,6,7], rate: 1/6}
+            });
+            //Player Sprite
+            Q.Sprite.extend("Player",
+            {
+                init: function(properties)
+                {
+                    properties.sheet="snail";
+                    properties.sprite="snail";
+                    properties.frame=12;
+                    this._super(properties);
+                    this.add("2d,PlayerControls,animation,tween");
+                    this.on("bump.right","TakeFlowerRight");
+                },
+                TakeFlower: function(collision)
+                {
+                    if(collision.obj.isA("Flower"))
+                    {
+                        var FlowerX=collision.obj.p.x;
+                        var FlowerY=collision.obj.p.y;
+
+                        collision.obj.destroy();
+
+                        Q.audio.play('collect.mp3');
+                        Q.state.inc("points",1);
+                        this.p.x=FlowerX;
+                        this.p.y=FlowerY;
+
+                    }//outer if
+                },
+                TakeFlowerUp: function(collision)
+                {
+                    if(collision.obj.isA("Flower"))
+                    {
+                        var FlowerX=collision.obj.p.x;
+                        var FlowerY=collision.obj.p.y;
+
+                        collision.obj.destroy();
+
+                        Q.audio.play('collect.mp3');
+                        Q.state.inc("points",1);
+
+                        this.p.x=FlowerX;
+                        this.p.y=FlowerY;
+                    }//outer if
+                },
+                TakeFlowerRight: function(collision)
+                {
+                    if(collision.obj.isA("Flower"))
+                    {
+                        var FlowerX=collision.obj.p.x;
+                        var FlowerY=collision.obj.p.y;
+
+                        collision.obj.destroy();
+
+                        Q.audio.play('collect.mp3');
+                        Q.state.inc("points",1);
+                    }//outer if
+                },
+
+                step: function(dt)
+                {
+                    if (move_Player=="u"){
+                        this.play("run_up");
+                    } else if(move_Player=="l"){
+                        this.play("run_left");
+                       
+                    } else if (move_Player=="r"){
+                        this.play("run_right");
+                    } else if (move_Player=="d"){
+                        this.play("stand");
+                    }
+                }
+            });
+            //Flower Sprite
+            Q.Sprite.extend("Flower",
+            {
+                init: function(properties)
+                {
+                    properties.sheet="background";
+                    properties.frame=79;
+                    this._super(properties);
+                    this.add("2d");
+                }
+            });
+
+            Q.scene("level1",function(stage)
+            {
+                Q.stageTMX(options.level,stage);
+            });
+            Q.scene('StartGame', function(stage)
+            {
+                stage.insert(new Q.UI.Button({
+                    label: " Start ",
+                    y: Q.height/2,
+                    x: Q.width/2,
+                    fill: "lightblue",
+                    border: 2,
+                }, function() {
+
+                    if (options.code === 'Blockly'){
+                        Blockly.JavaScript.INFINITE_LOOP_TRAP = null;
+                        code = Blockly.JavaScript.workspaceToCode(workspace);
+                    } else {
+                        code = editor.getSession().getValue();//get code from editor
+                    }
+
+                    FuncArray = code.split("\n");//make array of funcitons
+                    FuncArray = FuncArray.filter(Boolean);
+
+                    if(FuncArray.toString().includes("move")) {
+                        gameStart=true;
+                    } else {
+                        setTimeout(function (){
+                            collected_points=Q.state.get("points");
+                            Q.stageScene("GameOverMsg", 2);//display game over message
+                        },2000);
+                    }
+                    Q.clearStage(2);//remove the stage 2, for counter
+                }));
+            });
+            Q.scene('ui', function(stage)
+            {
+                Q.state.set("points",0);
+                var container = stage.insert(new Q.UI.Container({x:160,y:60}));
+
+                var Score = container.insert(new Q.Sprite({ asset: "score_gui.png"}));
+                var Score = container.insert(new Q.UI.Text(
+                {
+                    x:40,
+                    y: 0,
+                    label: Q.state.get("points") + " of " + options.levelPoints,
+                    size:25,
+                    align: 'right',
+                    family: "Exo"
+                }));
+                //whenever number of points changes, this function will be called
+                Q.state.on("change.points", function()
+                {
+                    var x=Q.state.get("points");
+                    //Q.state.set("points",x);
+                    Score.p.label= Q.state.get("points") + " of " + options.levelPoints;
+                });
+                container.fit(1);
+            });
+            Q.scene('GameOverMsg', function(stage)
+            {
+                if(gamePassed){
+                    Q.audio.play('victory.mp3');
+                    var completedPanel = new Q.Sprite({ asset: "completed_gui.png",
+                        x: Q.width/2, y: -100, angle: 0 });
+                } else {
+                    Q.audio.play('fail.mp3');
+                    var completedPanel = new Q.Sprite({ asset: "failed_gui.png",
+                        x: Q.width/2, y: -100, angle: 0 });
+                }
+
+                completedPanel.add("tween");
+
+                completedPanel.animate({ x: Q.height/2, y: (Q.height/2)+50 }, 0.5, Q.Easing.Quadratic.Out)
+                .chain({ x: Q.height/2, y: Q.height/2 }, 0.25, Q.Easing.Quadratic.In);
+
+                stage.insert(completedPanel);
+
+            });
+            //GRID SPRITE
+            Q.Sprite.extend("Grid",
+            {
+                init: function(p) {
+                    this._super(p,{
+                        w:0,
+                        h:0,
+                        x: 0,
+                        y: 0
+                    });
+                },
+                draw: function(ctx) {
+                    var canvas = document.getElementById('myGame'),con = canvas.getContext('2d');
+                    var w = canvas.width,h = canvas.height;
+                    con.setLineDash([1, 5]);
+                    for(var i = 0; i <= w || i <= h; i += 128) {
+                        // draw horizontal lines
+                        con.moveTo( i, -128 );
+                        con.lineTo( i, h);
+                        // draw vertical lines
+                        con.moveTo( 0, i );
+                        con.lineTo( w, i);
+                    }
+                    con.strokeStyle = '#000';
+                    con.stroke();
+                }
+            });
+            //load assets
+            Q.loadTMX([options.level, "victory.mp3", "collect.mp3", "fail.mp3", "score_gui.png", "completed_gui.png", "failed_gui.png"], function()
+            {
+                Q.stageScene("level1");
+                Q.stageScene("ui",1);
+                Q.stageScene("StartGame",2);
+                //Q.debug = true;
+            });
+        }
+
+        return init();
+        
+        };
+    </script>
+    <script>
+        var doj101 = new theDojo101({
+          level: 'level-1.tmx'
+        });
+    </script>
+</body>
+</html>

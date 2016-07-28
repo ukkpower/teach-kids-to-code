@@ -16,12 +16,11 @@
     <div class="container">
         <div class="col-md-6">
             <div id="editor">moveForward();
-                moveForward();
-                turnRight();
-                moveForward();
-                moveForward();
-                moveForward();
-            </div>        
+moveForward();
+turnRight();
+moveForward();
+moveForward();
+moveForward();</div>        
         </div>
         <div class="col-md-6">
             <canvas id='myGame' width="496" height="496"></canvas>
@@ -67,14 +66,6 @@
                 {
                     for(var l=0;l<z;l++){}
                 }
-        }
-
-        function levelComplete (success) {
-            if(success) {
-                $('#successModal').modal()
-            } else {
-                $('#sorryModal').modal()
-            }
         }
 
         function buildGame(){
@@ -137,8 +128,7 @@
                         gameFinished=true;
                         gamePassed=true;
                         //Q.state.set("points", options.levelPoints);
-                        Q.stageScene("GameOverMsg", 2);//display game over message
-                        //levelComplete(true);
+                        Q.stageScene("GameOverMsg", 2, { label: "Level Completed ! in moves="+move_count });//display game over message
                     }
 
                     // direction from the input will help in animation
@@ -182,7 +172,6 @@
                                         setTimeout(function (){
                                             p.y -= p.speed;
                                             move_Player="u";
-                                            //player_animation.play("run_up");
                                         },1000);
                                     }
                                 }
@@ -194,7 +183,6 @@
                                         if (!(p.x >= 1280 )) {
                                             setTimeout(function (){
                                                 p.x += p.speed;
-                                                //player_animation.play("run_right");
                                                 move_Player="r";
                                             },1000);
                                         }
@@ -208,7 +196,6 @@
                                         setTimeout(function (){
                                             p.x -= p.speed;
                                             move_Player="l";
-                                           // player_animation.play("run_left");
                                        },1000);
                                     }
                                 }
@@ -217,12 +204,10 @@
                                     for(var x=0;x<16;x++)
                                     {
                                         Sleep();
-                                        //  if (!(p.y >= 512)) {
-                                            setTimeout(function (){
-                                                p.y += p.speed;
-                                                move_Player="d";
-                                            },1000);
-                                        //  }//if end
+                                        setTimeout(function (){
+                                            p.y += p.speed;
+                                            move_Player="d";
+                                        },1000);
                                     }
                                 }//else end
                                 i++;
@@ -236,28 +221,24 @@
                                         {
                                             gameFinished=true;
                                             gamePassed=false;
-                                            Q.stageScene("GameOverMsg", 2);//display game over message
+                                            Q.stageScene("GameOverMsg", 2, { label: "Sorry try again" });//display game over message
                                         }//inner if end
                                         //To continue the movement for the last command
                                         if(FuncArray[(FuncArray.length-1)]=="turnRight();")
                                         {
                                             move_Player="r";
-                                            //  console.log("RIGHT");
                                         }
                                         else if(FuncArray[FuncArray.length-1]=="turnLeft();")
                                         {
                                             move_Player="l";
-                                            //    console.log("LEFT");
                                         }
                                         else if(FuncArray[FuncArray.length-1]=="turnUp();")
                                         {
                                             move_Player="u";
-                                            //    console.log("UP");
                                         }
                                         else if(FuncArray[FuncArray.length-1]=="turnDown();")
                                         {
                                             move_Player="d";
-                                            //    console.log("DOWN");
                                         }
                                     },1300);
                                 }
@@ -278,10 +259,9 @@
                                         collected_points=Q.state.get("points");
                                         if(collected_points<options.levelPoints && gameFinished==false)
                                         {
-                                          console.log('faileed');
                                           gameFinished=true;
                                           gamePassed=false;
-                                            Q.stageScene("GameOverMsg", 2);//display game over message
+                                          Q.stageScene("GameOverMsg", 2, { label: "Sorry try again" });//display game over message
                                         }
                                     },1300);
                                }
@@ -381,7 +361,6 @@
                     this.add("2d");
                 }
             });
-
             Q.scene("level1",function(stage)
             {
                 Q.stageTMX(options.level,stage);
@@ -396,12 +375,7 @@
                     border: 2,
                 }, function() {
 
-                    if (options.code === 'Blockly'){
-                        Blockly.JavaScript.INFINITE_LOOP_TRAP = null;
-                        code = Blockly.JavaScript.workspaceToCode(workspace);
-                    } else {
-                        code = editor.getSession().getValue();//get code from editor
-                    }
+                    code = editor.getSession().getValue();//get code from editor
 
                     FuncArray = code.split("\n");//make array of funcitons
                     FuncArray = FuncArray.filter(Boolean);
@@ -420,24 +394,14 @@
             Q.scene('ui', function(stage)
             {
                 Q.state.set("points",0);
-                var container = stage.insert(new Q.UI.Container({x:160,y:60}));
-
-                var Score = container.insert(new Q.Sprite({ asset: "score_gui.png"}));
-                var Score = container.insert(new Q.UI.Text(
-                {
-                    x:40,
-                    y: 0,
-                    label: Q.state.get("points") + " of " + options.levelPoints,
-                    size:25,
-                    align: 'right',
-                    family: "Exo"
-                }));
+                var container = stage.insert(new Q.UI.Container({x:45,y:20, fill: "rgba(0,0,0,0.5)"}));
+                var Score = container.insert(new Q.UI.Text({x:0, y: 0, label: "Score: " +Q.state.get("points"), size:20}));
                 //whenever number of points changes, this function will be called
                 Q.state.on("change.points", function()
                 {
                     var x=Q.state.get("points");
                     //Q.state.set("points",x);
-                    Score.p.label= Q.state.get("points") + " of " + options.levelPoints;
+                    Score.p.label="Score: " +x;
                 });
                 container.fit(1);
             });
@@ -445,20 +409,13 @@
             {
                 if(gamePassed){
                     Q.audio.play('victory.mp3');
-                    var completedPanel = new Q.Sprite({ asset: "completed_gui.png",
-                        x: Q.width/2, y: -100, angle: 0 });
                 } else {
                     Q.audio.play('fail.mp3');
-                    var completedPanel = new Q.Sprite({ asset: "failed_gui.png",
-                        x: Q.width/2, y: -100, angle: 0 });
                 }
 
-                completedPanel.add("tween");
-
-                completedPanel.animate({ x: Q.height/2, y: (Q.height/2)+50 }, 0.5, Q.Easing.Quadratic.Out)
-                .chain({ x: Q.height/2, y: Q.height/2 }, 0.25, Q.Easing.Quadratic.In);
-
-                stage.insert(completedPanel);
+                var container = stage.insert(new Q.UI.Container({x:Q.width/2,y:Q.height/2, fill: "rgba(1,1,1,0.25)"}));
+                var Score = container.insert(new Q.UI.Text({x:0, y: 0, label: stage.options.label, size:25}))
+                container.fit(1);
 
             });
             //GRID SPRITE
@@ -489,7 +446,7 @@
                 }
             });
             //load assets
-            Q.loadTMX([options.level, "victory.mp3", "collect.mp3", "fail.mp3", "score_gui.png", "completed_gui.png", "failed_gui.png"], function()
+            Q.loadTMX([options.level, "victory.mp3", "collect.mp3", "fail.mp3"], function()
             {
                 Q.stageScene("level1");
                 Q.stageScene("ui",1);

@@ -395,7 +395,7 @@ moveForward();</div>
             {
                 Q.state.set("points",0);
                 var container = stage.insert(new Q.UI.Container({x:45,y:20, fill: "rgba(0,0,0,0.5)"}));
-                var Score = container.insert(new Q.UI.Text({x:0, y: 0, label: "Score: " +Q.state.get("points"), size:20}));
+                var Score = container.insert(new Q.UI.Text({x:50, y: 50, label: "Score: " +Q.state.get("points"), size:40}));
                 //whenever number of points changes, this function will be called
                 Q.state.on("change.points", function()
                 {
